@@ -852,7 +852,7 @@ uint8_t AF_Stepper::onestep(uint8_t dir, uint8_t style) {
 Servo myservo;
 const int LED_PIN = 13;
 const int analogPin = 0;
-int speed = 60; // percent of maximum speed
+int speed = 40; // percent of maximum speed
 AF_DCMotor Motor_Left_Rear(1, MOTOR12_1KHZ); // Motor 1
 AF_DCMotor Motor_Right_Rear(2, MOTOR12_1KHZ); // Motor 2
 AF_DCMotor Motor_Left_Front(4, MOTOR12_1KHZ); // Motor 3
@@ -1257,17 +1257,17 @@ void changeMoveState(int newState)
 
 void moveRotate(int angle)
 {
-  Serial.print("Rotating "); Serial.println(angle);
+ // Serial.print("Rotating "); Serial.println(angle);
   if(angle < 0)
   {
-    Serial.println(" (left)");
+   // Serial.println(" (left)");
     motorReverse(MOTOR_LEFT, moveSpeed);
     motorForward(MOTOR_RIGHT, moveSpeed);
     angle = -angle; changeMoveState(MOV_ROTATE);
   }
   else if(angle > 0)
   {
-    Serial.println(" (right)");
+    //Serial.println(" (right)");
     motorForward(MOTOR_LEFT, moveSpeed);
     motorReverse(MOTOR_RIGHT, moveSpeed);
     changeMoveState(MOV_ROTATE);
@@ -1385,7 +1385,7 @@ const int MAX_DISTANCE = 150; // the maximum range of the distance sensor
 
 // angles left, right, center
 const int lookAngles[] = { -30, 30, 0};
-const byte pingPin = 10; // digital pin 10
+const byte pingPin = 10; // divogital pin 10
 
 const int OBST_FRONT = 4; // obstacle in front
 const int OBST_REAR = 5; // obstacle behind
@@ -1412,6 +1412,7 @@ boolean lookForObstacle(int obstacle)
 // this version rotates the robot
 int lookAt(int angle)
 {
+  //myservo.write(angle);
   moveRotate(angle); // rotate the robot
   int distance, samples;
   long cume;
@@ -1432,6 +1433,7 @@ int lookAt(int angle)
     distance = 0;
   
   moveRotate(-angle); // rotate back to original direction
+  //myservo.write(-angle);
   return distance;
 }
 
@@ -1458,47 +1460,103 @@ boolean checkMovement()
   return isClear;
 }
 
-// Look for and avoid obstacles by rotating robot
-void roam()
+void clearMotors()
 {
-  int distance = lookAt(lookAngles[DIR_CENTER]);
-  if(distance == 0)
-  {
-    moveStop();
-    Serial.println("No front sensor");
-    return; // no sensor
-  }
-  else if(distance <= MIN_DISTANCE)
-  {
-    moveStop();
-    //Serial.print("Scanning:");
-    int leftDistance = lookAt(lookAngles[DIR_LEFT]);
-    if(leftDistance > CLEAR_DISTANCE) {
-      // Serial.print(" moving left: ");
-      moveRotate(-90);
+  motorForward(MOTOR_LEFT, 0);
+  motorForward(MOTOR_RIGHT, 0);
+  motorReverse(MOTOR_LEFT, 0);
+  motorReverse(MOTOR_RIGHT, 0);
+}
+
+// Look for and avoid obstacles by rotating robot
+void roam(int servoDegree)
+{
+  
+    int distance = lookAt(lookAngles[DIR_CENTER]);
+    if(distance == 0)
+    {
+      moveStop();
+      Serial.println("No front sensor");
+      return; // no sensor
     }
-    else {
-      delay(500);
-      int rightDistance = lookAt(lookAngles[DIR_RIGHT]);
-      if(rightDistance > CLEAR_DISTANCE) {
-        // Serial.println(" moving right: ");
-        moveRotate(90);
+    else if(distance <= MIN_DISTANCE)
+    {
+      moveStop();
+      Serial.print("Scanning:");
+      myservo.write(180);
+      delay(400);
+      int leftDistance = pingGetDistance(pingPin);
+      
+      myservo.write(pos);
+      //int leftDistance = lookAt(lookAngles[DIR_LEFT]);
+      //if(servoDegree == 90)
+       Serial.print("LEFT DISTANCE = ");
+        Serial.println(leftDistance);
+        Serial.print("CLEAR DISTANCE = ");
+        Serial.println(CLEAR_DISTANCE);
+      if(leftDistance > CLEAR_DISTANCE) {
+       
+        // Serial.print(" moving left: ");
+        //moveRotate(-90);
+        //clearMotors();
+        for(int steps=0; steps < 120; steps++)
+        {
+          Serial.println("G U R N I  G O ! ! ! !");
+          //motorForward(MOTOR_RIGHT, 80); 
+          //motorForward(MOTOR_LEFT, 0); 
+          motorForward(MOTOR_RIGHT, 90);  
+          motorReverse(MOTOR_LEFT, 60); 
+          delay(10);
+        }
+        
+        clearMotors();
+        for(int steps=0; steps < 250; steps++)
+        {
+          motorForward(MOTOR_RIGHT, 90); 
+          motorForward(MOTOR_LEFT, 90); 
+          delay(10);
+        }
+        
+        clearMotors();
+        for(int steps=0; steps < 400; steps++)
+        {
+          //motorForward(MOTOR_RIGHT, 0); 
+          //motorForward(MOTOR_LEFT, 80);
+          motorForward(MOTOR_LEFT, 90);
+          //motorForward(MOTOR_RIGHT, 0);
+          motorReverse(MOTOR_RIGHT, 60);
+          delay(10);
+        }
+     
+        
+        clearMotors();
+        delay(100);
+        //moveRotate(90);
+      
       }
       else {
-        // Serial.print(" no clearence : ");
-        distance = max( leftDistance, rightDistance);
-        if(distance < CLEAR_DISTANCE/2) {
-          timedMove(MOV_BACK, 1000); // back up for one second
-          moveRotate(-180); // turn around
+        delay(500);
+        int rightDistance = lookAt(lookAngles[DIR_RIGHT]);
+        if(rightDistance > CLEAR_DISTANCE) {
+           Serial.println(" moving right: ");
+          if(servoDegree == 90) moveRotate(90);
         }
         else {
-          if(leftDistance > rightDistance)
-            moveRotate(-90);
-          else
-            moveRotate(90);
+          Serial.print(" no clearence : ");
+          distance = max( leftDistance, rightDistance);
+          if(distance < CLEAR_DISTANCE/2) {
+            timedMove(MOV_BACK, 1000); // back up for one second
+            moveRotate(-180); // turn around
+          }
+          else {
+            if(leftDistance > rightDistance)
+              if(servoDegree == 90) moveRotate(-90);
+            else
+              if(servoDegree == 90) moveRotate(90);
+          }
         }
       }
-    }
+    
   }
 }
 
@@ -1547,58 +1605,6 @@ void avoidEdge()
 
 
 
-//int speed = MIN_SPEED; // speed in percent when moving along a straight line
-/// Setup runs at startup and is used configure pins and init system variables
-
-void setup()
-{
-  Serial.begin(9600);
-  blinkNumber(8); // open port while flashing. Needed for Leonardo only
-  lookBegin(); /// added Look tab
-  moveBegin(); /// added Move tab
-  
-  irSensorBegin(); // initialize sensors
-  pinMode(LED_PIN, OUTPUT); // enable the LED pin for output
-  
-  lineSenseBegin(); // initialize sensors
-  myservo.attach(9);
-  Serial.println("Ready");
-}
-
-
-void loop()
-{
-
-  
-  //moveSpeed = 45;
-  //moveForward();
-  
-  for(pos = 0; pos < 180; pos += 1)  // goes from 0 degrees to 180 degrees 
-  {                                  // in steps of 1 degree 
-    myservo.write(pos);              // tell servo to go to position in variable 'pos' 
-    delay(10);                      // waits 15ms for the servo to reach the position 
-    int drift = lineSense();
-    lineFollow(drift, 40);
-    roam(); // look around
-  } 
-  for(pos = 180; pos>=1; pos-=1)     // goes from 180 degrees to 0 degrees 
-  {                                
-    myservo.write(pos);              // tell servo to go to position in variable 'pos' 
-    delay(10);                       // waits 15ms for the servo to reach the position 
-    int drift = lineSense();
-    lineFollow(drift, 40);
-    roam(); // look around
-  } 
-  
-  
-  
-  //avoidEdge(); // avoid edges
-  
-  /*int leftVal = analogRead(SENSE_IR_LEFT);
-  int centerVal = analogRead(SENSE_IR_CENTER);
-  int rightVal = analogRead(SENSE_IR_RIGHT);
-  Serial.println(centerVal);*/
-}
 
 
 // function to indicate numbers by flashing the built-in LED
@@ -1627,7 +1633,7 @@ int lineSense()
   int rightVal = analogRead(SENSE_IR_RIGHT);
   int leftSense = centerVal - leftVal;
   int rightSense = rightVal - centerVal;
-  int drift = rightVal - leftVal ;
+  int drift = leftVal - rightVal;
   return drift;
 }
 
@@ -1637,6 +1643,65 @@ int lineFollow(int drift, int speed)
   int rightSpeed = constrain(speed + (drift / damping), 0, 100);
   motorForward(MOTOR_LEFT, leftSpeed);
   motorForward(MOTOR_RIGHT, rightSpeed);
+}
+
+
+
+//int speed = MIN_SPEED; // speed in percent when moving along a straight line
+/// Setup runs at startup and is used configure pins and init system variables
+
+void setup()
+{
+  Serial.begin(9600);
+  blinkNumber(8); // open port while flashing. Needed for Leonardo only
+  lookBegin(); /// added Look tab
+  moveBegin(); /// added Move tab
+  
+  irSensorBegin(); // initialize sensors
+  pinMode(LED_PIN, OUTPUT); // enable the LED pin for output
+  
+  lineSenseBegin(); // initialize sensors
+  myservo.attach(9);
+  Serial.println("Ready");
+}
+
+
+
+
+void loop()
+{
+
+  
+  //moveSpeed = 45;
+  //moveForward();
+  
+  for(pos = 0; pos < 180; pos += 1)  // goes from 0 degrees to 180 degrees 
+  {                                  // in steps of 1 degree 
+    myservo.write(pos);              // tell servo to go to position in variable 'pos' 
+    delay(10);                      // waits 15ms for the servo to reach the position 
+    int drift = lineSense();
+    //if(pos == 90)Serial.println(pingGetDistance(pingPin));
+    lineFollow(drift, speed);
+    roam(pos); // look around
+  } 
+
+  //for(pos = 180; pos>=1; pos-=1)     // goes from 180 degrees to 0 degrees 
+  //{                                
+   // myservo.write(pos);              // tell servo to go to position in variable 'pos' 
+    //delay(10);                       // waits 15ms for the servo to reach the position 
+    //int drift = lineSense();
+    //lineFollow(drift, 40);
+    //roam(); // look around
+  //} 
+  
+  
+  
+  //avoidEdge(); // avoid edges
+  
+  /*int leftVal = analogRead(SENSE_IR_LEFT);
+  int centerVal = analogRead(SENSE_IR_CENTER);
+  int rightVal = analogRead(SENSE_IR_RIGHT);
+  Serial.println(centerVal);*/
 }
 
 
