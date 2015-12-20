@@ -3,7 +3,7 @@
 // this code is public domain, enjoy!
 
 /*
- * Usage Notes:
+ * Usage Notes::
  * For PIC32, all features work properly with the following two exceptions:
  *
  * 1) Because the PIC32 only has 5 PWM outputs, and the AFMotor shield needs 6
