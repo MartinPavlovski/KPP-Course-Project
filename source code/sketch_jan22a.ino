@@ -3,7 +3,11 @@
 // this code is public domain, enjoy!
 
 /*
+<<<<<<< HEAD
  * Usage Notes:
+=======
+ * Usage Notes::
+>>>>>>> parent of 8f5888f... Delete sketch_jan22a.ino
  * For PIC32, all features work properly with the following two exceptions:
  *
  * 1) Because the PIC32 only has 5 PWM outputs, and the AFMotor shield needs 6
